@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.phone2pc.phone2pc_mobile"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
