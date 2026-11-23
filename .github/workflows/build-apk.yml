@@ -3,8 +3,12 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
+    tags: ['v*']
     branches: [ccr-af98140c-ehb7ud]
     paths: ['apps/mobile/**', 'packages/shared/**', '.github/workflows/build-apk.yml']
+
+permissions:
+  contents: write
 
 jobs:
   apk:
@@ -17,6 +21,7 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.50.1'
           channel: stable
           cache: true
       - run: flutter --version
@@ -32,3 +37,9 @@ jobs:
         with:
           name: phone2pc-apk
           path: apps/mobile/build/app/outputs/flutter-apk/*.apk
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: apps/mobile/build/app/outputs/flutter-apk/*.apk
+          generate_release_notes: true
