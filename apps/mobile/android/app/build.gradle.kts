@@ -7,6 +7,11 @@ plugins {
 android {
     namespace = "com.phone2pc.phone2pc_mobile"
     compileSdk = 37
+
+    lint {
+        // The release-time lint pass is not needed to produce an APK and crashed on CI.
+        checkReleaseBuilds = false
+    }
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
