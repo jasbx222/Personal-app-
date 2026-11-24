@@ -1,0 +1,61 @@
+name: Build Desktop
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ccr-af98140c-ehb7ud]
+    paths: ['apps/desktop/**', 'packages/shared/**', '.github/workflows/build-desktop.yml']
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false   # one OS failing must not hide the others
+      matrix:
+        include:
+          - os: windows-latest
+            target: windows
+          - os: macos-latest
+            target: macos
+          - os: ubuntu-latest
+            target: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.50.1'
+          channel: stable
+          cache: true
+      - name: Linux build dependencies
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxi-dev libayatana-appindicator3-dev libnotify-dev clang cmake ninja-build pkg-config
+      - name: Test desktop app
+        working-directory: apps/desktop
+        run: |
+          flutter pub get
+          flutter test
+      - name: Build
+        working-directory: apps/desktop
+        run: flutter build ${{ matrix.target }} --release
+
+      - name: Package (Windows)
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: Compress-Archive -Path apps/desktop/build/windows/x64/runner/Release/* -DestinationPath Phone2PC-windows.zip
+      - name: Package (macOS)
+        if: matrix.target == 'macos'
+        run: ditto -c -k --sequesterRsrc --keepParent apps/desktop/build/macos/Build/Products/Release/Phone2PC.app Phone2PC-macos.zip
+      - name: Package (Linux)
+        if: matrix.target == 'linux'
+        run: tar -czf Phone2PC-linux.tar.gz -C apps/desktop/build/linux/x64/release/bundle .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phone2pc-desktop-${{ matrix.target }}
+          path: |
+            Phone2PC-windows.zip
+            Phone2PC-macos.zip
+            Phone2PC-linux.tar.gz
+          if-no-files-found: error
